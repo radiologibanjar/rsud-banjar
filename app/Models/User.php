@@ -50,15 +50,28 @@ class User extends Authenticatable
     }
 
     public function isAdmin() {
-        return $this->role === 'admin';
+        return $this->role === 'superadmin';
+    }
+
+    public function isAdminStaff() {
+        return $this->role === 'adminstaff';
     }
 
     public function isDoctor() {
-        return $this->role === 'dokter';
+        return $this->role === 'doctor';
     }
 
     public function isRadiographer() {
         return $this->role === 'radiografer';
+    }
+
+    public function hasRole($roles)
+    {
+        if (is_array($roles)) {
+            return in_array($this->role, $roles) || $this->role === 'superadmin';
+        }
+
+        return $this->role === $roles || $this->role === 'superadmin';
     }
 
 }
