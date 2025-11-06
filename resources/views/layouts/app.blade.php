@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>@yield('title', config('app.name'))</title>
+  <title>{{ config('app.name', 'Laravel') }}</title>
 
-  <!-- AdminLTE -->
+  <!-- Font Awesome & AdminLTE -->
   <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}">
   <link rel="stylesheet" href="{{ asset('css/adminlte.min.css') }}">
 
@@ -30,11 +30,18 @@
       --sidebar-bg-dark: #161d2e;
     }
 
+    body {
+      transition: background-color 0.3s ease, color 0.3s ease;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    /* Light mode */
     body.light-mode {
       background-color: var(--bg-body-light);
       color: var(--text-dark-light);
     }
 
+    /* Dark mode */
     body.dark-mode {
       background-color: var(--bg-body-dark);
       color: var(--text-dark-dark);
@@ -42,22 +49,40 @@
 
     /* Navbar */
     .main-header {
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+      position: fixed;
+      top: 0;
+      left: 250px;
+      right: 0;
+      height: 56px;
+      z-index: 1030;
+      width: calc(100% - 250px);
+    }
+
+    body.sidebar-collapse .main-header {
+      left: 0;
+      width: 100%;
     }
 
     body.light-mode .main-header {
       background-color: #ffffff !important;
       border-bottom: 1px solid #e5e7eb;
-      color: var(--text-dark-light);
     }
 
     body.dark-mode .main-header {
       background-color: #111827 !important;
       border-bottom: 1px solid #1e293b;
-      color: var(--text-dark-dark);
     }
 
     /* Sidebar */
+    .main-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      transition: background-color 0.3s ease;
+    }
+
     body.light-mode .main-sidebar {
       background-color: var(--sidebar-bg-light) !important;
     }
@@ -66,10 +91,25 @@
       background-color: var(--sidebar-bg-dark) !important;
     }
 
+    /* Content wrapper */
+    .content-wrapper {
+      margin-left: 250px;
+      padding: 1.5rem;
+      padding-top: 1rem;
+      padding-top: 1rem;
+      min-height: calc(100vh - 56px);
+      transition: margin-left 0.3s ease;
+    }
+
+    body.sidebar-collapse .content-wrapper {
+      margin-left: 0 !important;
+      padding-top: 1rem;
+    }
+
     /* Card */
     .card {
       border-radius: 12px;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      transition: all 0.3s ease;
     }
 
     body.light-mode .card {
@@ -107,22 +147,14 @@
       background-color: var(--primary-hover-dark);
     }
 
-    /* Theme Toggle Button */
-    .theme-toggle {
-      cursor: pointer;
-      border: none;
-      background: none;
-      color: inherit;
-      font-size: 1.2rem;
-    }
-
-    .theme-toggle:focus {
-      outline: none;
-    }
-
     /* Footer */
     .main-footer {
-      transition: background-color 0.3s ease;
+      margin-left: 250px;
+      transition: background-color 0.3s ease, color 0.3s ease, margin-left 0.3s ease;
+    }
+
+    body.sidebar-collapse .main-footer {
+      margin-left: 0;
     }
 
     body.light-mode .main-footer {
@@ -137,37 +169,30 @@
       color: var(--text-muted-dark);
     }
   </style>
-
-  @stack('styles')
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed light-mode">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed light-mode">
+
 <div class="wrapper">
 
   <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand navbar-light">
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <button id="themeToggle" class="theme-toggle">
-          <i id="themeIcon" class="fas fa-moon"></i>
-        </button>
-      </li>
-    </ul>
-  </nav>
+  @include('layouts.partials.navbar')
 
   <!-- Sidebar -->
   @include('layouts.partials.sidebar')
 
-  <!-- Content Wrapper -->
-  <div class="content-wrapper p-3">
-    <section class="content">
-      @yield('content')
+  <!-- Content -->
+  <div class="content-wrapper">
+    <section class="content pt-3">
+      <div class="container-fluid">
+        @yield('content')
+      </div>
     </section>
   </div>
 
   <!-- Footer -->
   <footer class="main-footer text-center py-2">
-    <small>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</small>
+    <strong>&copy; {{ date('Y') }} {{ config('app.name') }}</strong> - All rights reserved.
   </footer>
 
 </div>
@@ -178,31 +203,32 @@
 <script src="{{ asset('js/adminlte.min.js') }}"></script>
 
 <script>
-  // === DARK/LIGHT MODE TOGGLE ===
-  const themeToggle = document.getElementById('themeToggle');
-  const themeIcon = document.getElementById('themeIcon');
-  const body = document.body;
+  document.addEventListener('DOMContentLoaded', function () {
+    const body = document.body;
+    const toggle = document.getElementById('themeToggle');
+    const icon = document.getElementById('themeIcon');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
 
-  // Cek preferensi user di localStorage
-  if (localStorage.getItem('theme') === 'dark') {
-    body.classList.remove('light-mode');
-    body.classList.add('dark-mode');
-    themeIcon.classList.replace('fa-moon', 'fa-sun');
-  }
+    toggle.addEventListener('click', () => {
+      const newTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
+      setTheme(newTheme);
+      localStorage.setItem('theme', newTheme);
+    });
 
-  themeToggle.addEventListener('click', () => {
-    if (body.classList.contains('light-mode')) {
-      body.classList.replace('light-mode', 'dark-mode');
-      themeIcon.classList.replace('fa-moon', 'fa-sun');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      body.classList.replace('dark-mode', 'light-mode');
-      themeIcon.classList.replace('fa-sun', 'fa-moon');
-      localStorage.setItem('theme', 'light');
+    function setTheme(theme) {
+      if (theme === 'dark') {
+        body.classList.add('dark-mode');
+        body.classList.remove('light-mode');
+        icon.classList.replace('fa-moon', 'fa-sun');
+      } else {
+        body.classList.add('light-mode');
+        body.classList.remove('dark-mode');
+        icon.classList.replace('fa-sun', 'fa-moon');
+      }
     }
   });
 </script>
 
-@stack('scripts')
 </body>
 </html>
